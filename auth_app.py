@@ -21,6 +21,38 @@ DB_CONFIG = {
     'sslmode': 'require'  # Required for Neon
 }
 
+
+def create_admin_user():
+    """Create an admin user with predefined credentials if not exists"""
+    try:
+        conn = psycopg2.connect(**DB_CONFIG)
+        cur = conn.cursor()
+        
+        # Check if admin user exists
+        cur.execute("SELECT id FROM users WHERE email = %s", ('htantawy@gmail.com',))
+        if not cur.fetchone():
+            password_hash = hash_password('hussein1234')
+            cur.execute("""
+                INSERT INTO users (email, password_hash, full_name, user_type)
+                VALUES (%s, %s::text, %s, %s)
+            """, ('htantawy@gmail.com', password_hash, 'Module Lead', 'admin'))
+            conn.commit()
+            print("Admin user created successfully!")
+        else:
+            print("Admin user already exists.")
+    except Exception as e:
+        print(f"Error creating admin user: {e}")
+        if conn:
+            conn.rollback()
+        raise e
+    finally:
+        if conn:
+            cur.close()
+            conn.close()
+
+
+
+
 def init_db():
     """Initialize database tables if they don't exist"""
     try:
@@ -72,17 +104,17 @@ def init_db():
         
         # Create matching_history table
         cur.execute("""
-            CREATE TABLE IF NOT EXISTS matching_history (
-                id SERIAL PRIMARY KEY,
-                student_id INTEGER REFERENCES users(id),
-                supervisor_name VARCHAR(255) NOT NULL,
-                final_score FLOAT NOT NULL,
-                research_alignment FLOAT NOT NULL,
-                methodology_match FLOAT NOT NULL,
-                technical_skills FLOAT NOT NULL,
-                domain_knowledge FLOAT NOT NULL,
-                matching_skills JSONB,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      CREATE TABLE IF NOT EXISTS matching_history (
+        id SERIAL PRIMARY KEY,
+        student_id INTEGER REFERENCES users(id),
+        supervisor_id INTEGER REFERENCES users(id),
+        final_score FLOAT NOT NULL,
+        research_alignment FLOAT NOT NULL,
+        methodology_match FLOAT NOT NULL,
+        technical_skills FLOAT NOT NULL,
+        domain_knowledge FLOAT NOT NULL,
+        matching_skills JSONB,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
         """)
         # Add this to the init_db() function
@@ -114,6 +146,8 @@ def init_db():
         conn.commit()
         print("Database initialized successfully!")
         
+        create_admin_user()
+
     except Exception as e:
         print(f"Database initialization error: {str(e)}")
         if conn:

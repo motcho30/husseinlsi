@@ -4,6 +4,7 @@ from auth_app import login_page, signup_page, student_signup, supervisor_signup
 from app import main as student_main
 from supervisor_dashboard import supervisor_dashboard
 from database import verify_database
+from admin_dashboard import admin_dashboard
 
 def initialize_session_state():
     if 'authenticated' not in st.session_state:
@@ -20,7 +21,6 @@ def main():
     
     initialize_session_state()
     
-    # If not authenticated, show auth pages
     if not st.session_state.authenticated:
         if st.session_state.page == 'login':
             login_page()
@@ -36,6 +36,8 @@ def main():
             student_main()
         elif st.session_state.user_type == 'supervisor':
             supervisor_dashboard()
+        elif st.session_state.user_type == 'admin':
+            admin_dashboard()
         else:
             st.error("Invalid user type")
 

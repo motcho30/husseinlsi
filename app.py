@@ -160,6 +160,37 @@ def get_student_requests(student_id):
             cur.close()
             conn.close()
 
+def save_match_history(student_id, supervisor_id, match_data):
+    """Save match details to the matching_history table"""
+    try:
+        conn = psycopg2.connect(**DB_CONFIG)
+        cur = conn.cursor()
+
+        cur.execute("""
+            INSERT INTO matching_history 
+            (student_id, supervisor_id, final_score, research_alignment, methodology_match, technical_skills, domain_knowledge, matching_skills)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+        """, (
+            student_id,
+            supervisor_id,
+            match_data['final_score'],
+            match_data['detailed_scores']['research_alignment'],
+            match_data['detailed_scores']['methodology_match'],
+            match_data['detailed_scores']['technical_skills'],
+            match_data['detailed_scores']['domain_knowledge'],
+            json.dumps(match_data.get('matching_skills', []))
+        ))
+
+        conn.commit()
+    except Exception as e:
+        st.error(f"Error saving match history: {e}")
+        if conn:
+            conn.rollback()
+    finally:
+        if conn:
+            cur.close()
+            conn.close()
+
 def init_session_state():
     """Initialize session state variables"""
     if 'matching_results' not in st.session_state:
@@ -211,6 +242,12 @@ def main():
         if st.button("Logout", key="sidebar_logout_button"):
             st.session_state.clear()
             st.rerun()
+
+
+
+
+
+
             
 def show_search_page():
     """Show the supervisor search and matching page"""
@@ -347,6 +384,12 @@ def show_search_page():
                                 st.session_state.project_data,
                                 match['final_score']
                             ):
+                                save_match_history(
+                             st.session_state.user['id'],
+            supervisor['id'],
+            match  # Pass the entire match data
+        )   
+
                                 st.success(f"Request sent to {supervisor['name']}!")
                             else:
                                 st.error("Failed to send request. Please try again.")
